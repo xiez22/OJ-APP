@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">ACOJ</string>
+    <string name="title_activity_login">账户信息</string>
+    <string name="prompt_email">账户</string>
+    <string name="prompt_password">密码</string>
+    <string name="action_sign_in">保存密码</string>
+    <string name="action_sign_in_short">账户信息</string>
+    <string name="welcome">"Welcome !"</string>
+    <string name="invalid_username">Not a valid username</string>
+    <string name="invalid_password">Password must be >5 characters</string>
+    <string name="login_failed">"Login failed"</string>
+</resources>
