@@ -182,15 +182,15 @@ public class MainActivity extends AppCompatActivity {
             toastMsg("您尚未登录账户，不能提交。");
             return;
         }
-        final String todo = ((TextView)findViewById(R.id.text_problem)).getText().toString();
+        final String todo = ((EditText)findViewById(R.id.Promblem_Code)).getText().toString();
         if(todo.length()!=4){
-            Toast.makeText(this,"没有需要提交的题目！",Toast.LENGTH_SHORT).show();
+            Toast.makeText(this,"请输入正确的题目编号！",Toast.LENGTH_SHORT).show();
         }
         else {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
 
             builder.setTitle("确认提交");
-            builder.setMessage("将通过服务器为您提交此题，这可能会产生一些问题，您确认要提交吗？");
+            builder.setMessage("将使用当前的账号为您提交第"+todo+"题，提交可能会产生一些错误，您确认要提交吗？");
 
             builder.setPositiveButton("确认提交", new DialogInterface.OnClickListener() {
                 @Override
@@ -208,6 +208,7 @@ public class MainActivity extends AppCompatActivity {
                             SendThread sendThread = new SendThread(connectThread.outputStream, toSend);
                             sendThread.start();
                             Toast.makeText(getApplicationContext(),"已经为您发送提交请求",Toast.LENGTH_SHORT).show();
+                            ((EditText)findViewById(R.id.Promblem_Code)).clearFocus();
                             break;
                         }
                     }
@@ -285,6 +286,7 @@ public class MainActivity extends AppCompatActivity {
                     ((TextView) findViewById(R.id.text_name)).setText(msgStr[0]);
                     ((TextView) findViewById(R.id.text_problem)).setText(msgStr[1]);
                     ((TextView) findViewById(R.id.text_result)).setText(msgStr[2]);
+                    ((EditText)findViewById(R.id.Promblem_Code)).setText(msgStr[1]);
 
                     String id = "ACSJTU_001";
                     String name = "name";
@@ -306,6 +308,15 @@ public class MainActivity extends AppCompatActivity {
                             TextToSpeech.QUEUE_FLUSH,null);
                     if(msgStr[2].startsWith("正确")){
                         ((LinearLayout)findViewById(R.id.linear)).setBackgroundColor(Color.rgb(0,180,80));
+                    }
+                    else if(msgStr[2].startsWith("超过")){
+                        ((LinearLayout)findViewById(R.id.linear)).setBackgroundColor(Color.rgb(0xff,0x66,0x00));
+                    }
+                    else if(msgStr[2].startsWith("编译错误")){
+                        ((LinearLayout)findViewById(R.id.linear)).setBackgroundColor(Color.rgb(0x00,0x66,0xff));
+                    }
+                    else if(msgStr[2].startsWith("运行时错误")){
+                        ((LinearLayout)findViewById(R.id.linear)).setBackgroundColor(Color.rgb(0xcc,0x00,0x99));
                     }
                     else{
                         ((LinearLayout)findViewById(R.id.linear)).setBackgroundColor(Color.rgb(200,0,0));
