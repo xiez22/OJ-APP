@@ -42,12 +42,23 @@ public class MainActivity extends AppCompatActivity {
     MsgReadThread msgReadThread = null;
     String ip;
     int port;
+    //check if connecting
+    Boolean connectingToServer = false;
     Boolean connectedToServer = false;
+    //Check receive the hello call.
     Boolean receivedCall = false;
+    //Check set the timer to check the network.
     Boolean timeSet = false;
+    //Checking the network.
     Boolean checking = false;
     Boolean shownConnected = false;
+    //Check the userinfo status.
+    int userInfoStatus = 0;
+    //Userinfo String.
+    String userInfo = null;
+    //Username and password.
     String tmpUsername = null, tmpPassword = null;
+    //Set if need to check connect.
 
     //To Get Username and Password.
     public Boolean getUserData(){
@@ -95,10 +106,6 @@ public class MainActivity extends AppCompatActivity {
             ip = "120.27.241.203";
             port = 6666;
             connectToServer();
-            if(!timeSet) {
-                timer.schedule(task, 0, 10000);
-                timeSet = true;
-            }
         }
         else{
             try {
@@ -107,6 +114,11 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, "检查连接时出现问题。", Toast.LENGTH_SHORT).show();
                 e.printStackTrace();
             }
+        }
+
+        if(!timeSet) {
+            timer.schedule(task, 10000, 30000);
+            timeSet = true;
         }
 
         //GetUserData
@@ -145,19 +157,13 @@ public class MainActivity extends AppCompatActivity {
         try {
             if (connectThread != null && connectThread.socket.isConnected()) {
                 toastMsg("已经成功连接到服务器。");
-                connectedToServer = true;
+
                 //Login
-                SendThread sendThread = new SendThread(connectThread.outputStream, "~@Tourist:Login");
-                sendThread.start();
+                sendMsg("~@Tourist:Login");
 
                 //Start Listen Thread
                 msgReadThread = new MsgReadThread();
                 msgReadThread.start();
-
-                if(!shownConnected){
-                    ((TextView)findViewById(R.id.text_name)).setText("已经连接到服务器");
-                    shownConnected = true;
-                }
             } else {
                 toastMsg("连接出现问题");
             }
@@ -169,8 +175,32 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onConnectClick(View view){
-        Intent intent = new Intent(MainActivity.this, LoginActivity.class);
-        startActivityForResult(intent,1000);
+        if(userInfoStatus == 1){
+            try {
+                String[] infoList = userInfo.split("!#@%!");
+
+                Bundle bundle = new Bundle();
+                bundle.putString("name", infoList[1]);
+                bundle.putString("username", infoList[0]);
+                bundle.putString("txt1", infoList[2]);
+                bundle.putString("txt2", infoList[3]);
+
+                Intent intent = new Intent(MainActivity.this, InfoActivity.class);
+                intent.putExtras(bundle);
+                startActivityForResult(intent, 1001);
+            }
+            catch (Exception e){
+                toastMsg(e.toString());
+                e.printStackTrace();
+            }
+        }
+        else if(userInfoStatus == 2){
+            toastMsg("正在获取用户信息，请稍后修改...");
+        }
+        else{
+            Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+            startActivityForResult(intent,1000);
+        }
     }
 
     public void onSendClick(View view){
@@ -205,8 +235,7 @@ public class MainActivity extends AppCompatActivity {
                         }
                         else {
                             String toSend = "TODO:"+todo+tmpUsername+"~@$"+tmpPassword;
-                            SendThread sendThread = new SendThread(connectThread.outputStream, toSend);
-                            sendThread.start();
+                            sendMsg(toSend);
                             Toast.makeText(getApplicationContext(),"已经为您发送提交请求",Toast.LENGTH_SHORT).show();
                             ((EditText)findViewById(R.id.Promblem_Code)).clearFocus();
                             break;
@@ -232,17 +261,45 @@ public class MainActivity extends AppCompatActivity {
     }
 
     protected void onActivityResult(int requestCode, int resultCode, Intent data){
-        if (resultCode == RESULT_OK){
-            Bundle bundle = data.getExtras();
-            SharedPreferences sharedPreferences = getSharedPreferences("userData",MODE_PRIVATE);
-            SharedPreferences.Editor editor = sharedPreferences.edit();
-            editor.putString("username",bundle.getString("username"));
-            editor.putString("password",bundle.getString("password"));
-            editor.commit();
+        if(requestCode == 1000) {
+            if (resultCode == RESULT_OK) {
+                Bundle bundle = data.getExtras();
+                SharedPreferences sharedPreferences = getSharedPreferences("userData", MODE_PRIVATE);
+                SharedPreferences.Editor editor = sharedPreferences.edit();
+                editor.putString("username", bundle.getString("username"));
+                editor.putString("password", bundle.getString("password"));
+                editor.commit();
 
-            ((Button)findViewById(R.id.button_connect)).setText(bundle.getString("username"));
+                ((Button) findViewById(R.id.button_connect)).setText(bundle.getString("username"));
 
-            toastMsg("账户信息保存成功！");
+                //Get User Info.
+                if(connectedToServer) {
+                    getUserData();
+                    ((TextView) findViewById(R.id.connect_info)).setText("正在获取用户数据");
+                    sendMsg("INFO:" + tmpUsername);
+                    userInfoStatus = 2;
+                }
+                else{
+                    userInfoStatus = 0;
+                }
+
+                toastMsg("账户信息保存成功！");
+            }
+        }
+        else if(requestCode == 1001){
+            if(resultCode==RESULT_OK){
+                SharedPreferences sharedPreferences = getSharedPreferences("userData", MODE_PRIVATE);
+                SharedPreferences.Editor editor = sharedPreferences.edit();
+                editor.putString("username", null);
+                editor.putString("password", null);
+                editor.commit();
+
+                ((Button) findViewById(R.id.button_connect)).setText("账户");
+                ((TextView)findViewById(R.id.connect_info)).setText("暂无用户信息");
+                tmpUsername = tmpPassword = null;
+                toastMsg("清除用户信息成功！");
+                userInfoStatus = 0;
+            }
         }
     }
 
@@ -271,6 +328,19 @@ public class MainActivity extends AppCompatActivity {
                             .setSmallIcon(R.drawable.ic_launcher_foreground).build();
                     textToSpeech.speak("已经连接到服务器",TextToSpeech.QUEUE_FLUSH,null);
                     notificationManager.notify(1, notification);
+
+                    if(!shownConnected){
+                        ((TextView)findViewById(R.id.text_name)).setText("已经连接到服务器");
+                        shownConnected = true;
+                    }
+
+                    if(userInfoStatus == 0 && getUserData()) {
+                        //Get User Info.
+                        ((TextView) findViewById(R.id.connect_info)).setText("正在获取用户数据");
+                        sendMsg("INFO:" + tmpUsername);
+                        userInfoStatus = 2;
+                    }
+                    connectedToServer = true;
                 }
                 else if(toSend.startsWith("FEEDBACK")){
                     receivedCall = true;
@@ -280,6 +350,15 @@ public class MainActivity extends AppCompatActivity {
                 }
                 else if(toSend.startsWith("submit_fail")){
                     Toast.makeText(MainActivity.this,"提交出现异常",Toast.LENGTH_SHORT).show();
+                }
+                else if(toSend.startsWith("info:")){
+                    userInfo = toSend.substring(5);
+                    ((TextView)findViewById(R.id.connect_info)).setText("用户数据获取完成");
+                    userInfoStatus = 1;
+                }
+                else if(toSend.startsWith("info_fail")){
+                    userInfoStatus = 0;
+                    ((TextView)findViewById(R.id.connect_info)).setText("用户不存在或无提交记录");
                 }
                 else {
                     String[] msgStr = toSend.split("!@#");
@@ -339,6 +418,11 @@ public class MainActivity extends AppCompatActivity {
         toastHandler.sendMessage(msg);
     }
 
+    public void sendMsg(String toSend){
+        toSend = toSend.length()+"~"+toSend;
+        new SendThread(connectThread.outputStream,toSend).start();
+    }
+
     Handler toastHandler = new Handler(){
         public void handleMessage(Message msg){
             try{
@@ -357,7 +441,7 @@ public class MainActivity extends AppCompatActivity {
             try{
                 Bundle bundle = msg.getData();
                 String curTime = bundle.getString("time");
-                ((TextView)findViewById(R.id.connect_info)).setText(curTime);
+                //((TextView)findViewById(R.id.connect_info)).setText(curTime);
             }
             catch (Exception e){
                 e.printStackTrace();
@@ -403,19 +487,26 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
 
-            String raw = new String(bt, "utf-8");
+            byte[] rawbt = new byte[realLength];
+            System.arraycopy(bt,0,rawbt,0,realLength);
+            String raw = new String(rawbt, "utf-8");
+            while(raw.length()>0) {
+                int pos = raw.indexOf('~');
+                int length = Integer.parseInt(raw.substring(0,pos));
+                String toSend = raw.substring(pos+1,pos+1+length);
+                raw = raw.substring(pos+1+length);
 
-            Bundle bundle = new Bundle();
-            bundle.putString("msg",raw);
+                Bundle bundle = new Bundle();
+                bundle.putString("msg", toSend);
+                Message msg = new Message();
+                msg.setData(bundle);
+                receivedCall = true;
 
-            Message msg = new Message();
-            msg.setData(bundle);
-
-            receivedCall = true;
-
-            handler.sendMessage(msg);
+                handler.sendMessage(msg);
+            }
         }
         catch (Exception e){
+            toastMsg(e.toString());
             e.printStackTrace();
         }
     }
@@ -459,8 +550,7 @@ public class MainActivity extends AppCompatActivity {
                 receivedCall = false;
                 checking = true;
                 for(int i=0;i<5;++i){
-                    SendThread sendThread = new SendThread(connectThread.outputStream, "HELLO-CALL");
-                    sendThread.start();
+                    sendMsg("HELLO-CALL");
                     try {
                         Thread.sleep(800);
                     } catch (InterruptedException e1) {
