@@ -3,6 +3,8 @@ package com.ligongzzz.acoj;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.NotificationCompat;
 
+import android.animation.ArgbEvaluator;
+import android.animation.ObjectAnimator;
 import android.app.AlertDialog;
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -59,6 +61,8 @@ public class MainActivity extends AppCompatActivity {
     //Username and password.
     String tmpUsername = null, tmpPassword = null;
     //Set if need to check connect.
+    //Current Color
+    int curColor = 0xffffffff;
 
     //To Get Username and Password.
     public Boolean getUserData(){
@@ -117,7 +121,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if(!timeSet) {
-            timer.schedule(task, 10000, 30000);
+            timer.schedule(task, 10000, 20000);
             timeSet = true;
         }
 
@@ -346,10 +350,16 @@ public class MainActivity extends AppCompatActivity {
                     receivedCall = true;
                 }
                 else if(toSend.startsWith("submit_success")){
-                    Toast.makeText(MainActivity.this,"提交已经成功",Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this,"您的提交已经成功，请耐心等待评测结果",Toast.LENGTH_SHORT).show();
                 }
                 else if(toSend.startsWith("submit_fail")){
-                    Toast.makeText(MainActivity.this,"提交出现异常",Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this,"提交服务出现异常，请稍后再试",Toast.LENGTH_SHORT).show();
+                }
+                else if(toSend.startsWith("submit_not_found")){
+                    toastMsg("服务器没有找到这道题的代码");
+                }
+                else if(toSend.startsWith("submit_pwd_error")){
+                    toastMsg("服务器登录异常，请检查您的账户密码");
                 }
                 else if(toSend.startsWith("info:")){
                     userInfo = toSend.substring(5);
@@ -359,6 +369,9 @@ public class MainActivity extends AppCompatActivity {
                 else if(toSend.startsWith("info_fail")){
                     userInfoStatus = 0;
                     ((TextView)findViewById(R.id.connect_info)).setText("用户不存在或无提交记录");
+                }
+                else if(toSend.startsWith("toast:")){
+                    toastMsg(toSend.substring(6));
                 }
                 else {
                     String[] msgStr = toSend.split("!@#");
@@ -385,21 +398,24 @@ public class MainActivity extends AppCompatActivity {
                             .setSmallIcon(R.drawable.ic_launcher_foreground).build();
                     textToSpeech.speak(msgStr[0]+"提交了第"+msgStr[1]+"题，提交的结果为"+msgStr[2],
                             TextToSpeech.QUEUE_FLUSH,null);
+                    int toColor = 0;
                     if(msgStr[2].startsWith("正确")){
-                        ((LinearLayout)findViewById(R.id.linear)).setBackgroundColor(Color.rgb(0,180,80));
+                        toColor = 0xff00cc50;
                     }
                     else if(msgStr[2].startsWith("超过")){
-                        ((LinearLayout)findViewById(R.id.linear)).setBackgroundColor(Color.rgb(0xff,0x66,0x00));
+                        toColor = 0xffff6600;
                     }
                     else if(msgStr[2].startsWith("编译错误")){
-                        ((LinearLayout)findViewById(R.id.linear)).setBackgroundColor(Color.rgb(0x00,0x66,0xff));
+                        toColor = 0xff0066ff;
                     }
                     else if(msgStr[2].startsWith("运行时错误")){
-                        ((LinearLayout)findViewById(R.id.linear)).setBackgroundColor(Color.rgb(0xcc,0x00,0x99));
+                        toColor = 0xffcc0099;
                     }
                     else{
-                        ((LinearLayout)findViewById(R.id.linear)).setBackgroundColor(Color.rgb(200,0,0));
+                        toColor = 0xffcc0000;
                     }
+                    changeColor(curColor,toColor);
+                    curColor = toColor;
                     notificationManager.notify(1, notification);
                 }
             }
@@ -408,6 +424,14 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     };
+
+    public void changeColor(int colorFrom,int colorTo){
+        LinearLayout linearLayout = (LinearLayout)findViewById(R.id.linear);
+        ObjectAnimator objectAnimator = ObjectAnimator.ofInt(linearLayout,"backgroundColor",colorFrom,colorTo);
+        objectAnimator.setDuration(1000);
+        objectAnimator.setEvaluator(new ArgbEvaluator());
+        objectAnimator.start();
+    }
 
     public void toastMsg(String toToast){
         Message msg = new Message();

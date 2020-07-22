@@ -82,6 +82,16 @@
             android:layout_height="60dp"
             android:layout_margin="20dp"
             android:onClick="onClearClick"
-            android:text="清除用户信息" />
+            android:textSize="16sp"
+            android:text="注销" />
+
+        <TextView
+            android:id="@+id/textView"
+            android:layout_margin="25dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="12sp"
+            android:lineSpacingExtra="6dp"
+            android:text="完成题目：（正确题目数）/（总尝试题目数）\n提交次数：（正确次数）/（总提交次数）" />
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

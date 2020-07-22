@@ -47,5 +47,14 @@
             android:layout_margin="20dp"
             android:onClick="onSaveClick"
             android:text="保存" />
+
+        <TextView
+            android:id="@+id/textView"
+            android:layout_margin="25dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="12sp"
+            android:lineSpacingExtra="6dp"
+            android:text="说明：\n1、我们不会收集您的任何个人信息，相关代码已在GitHub上开源。\n2、您的密码仅用于提交题目，若您仅希望查看个人信息，则可以输入错误的密码。\n3、查看最新提交的功能无需输入账户信息。"/>
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
